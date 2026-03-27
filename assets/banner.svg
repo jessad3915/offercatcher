@@ -1,0 +1,65 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OpenClaw Offer Radar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="55%" stop-color="#0e2746"/>
+      <stop offset="100%" stop-color="#12335d"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#56f0ff"/>
+      <stop offset="100%" stop-color="#9efb8f"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <circle cx="1060" cy="130" r="170" fill="#173c6b" opacity="0.28"/>
+  <circle cx="165" cy="520" r="220" fill="#124268" opacity="0.22"/>
+
+  <g opacity="0.18" stroke="#7cc7ff" stroke-width="2">
+    <path d="M0 96 H1280"/>
+    <path d="M0 176 H1280"/>
+    <path d="M0 256 H1280"/>
+    <path d="M0 336 H1280"/>
+    <path d="M0 416 H1280"/>
+    <path d="M0 496 H1280"/>
+    <path d="M0 576 H1280"/>
+    <path d="M128 0 V640"/>
+    <path d="M288 0 V640"/>
+    <path d="M448 0 V640"/>
+    <path d="M608 0 V640"/>
+    <path d="M768 0 V640"/>
+    <path d="M928 0 V640"/>
+    <path d="M1088 0 V640"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <path d="M98 410 L250 410 L330 310 L430 310 L520 220 L690 220 L780 150 L965 150" fill="none" stroke="url(#line)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="250" cy="410" r="12" fill="#56f0ff"/>
+    <circle cx="430" cy="310" r="12" fill="#56f0ff"/>
+    <circle cx="690" cy="220" r="12" fill="#56f0ff"/>
+    <circle cx="965" cy="150" r="14" fill="#9efb8f"/>
+  </g>
+
+  <g transform="translate(92 132)">
+    <rect x="0" y="-34" width="212" height="38" rx="19" fill="#123f69" stroke="#56f0ff" stroke-width="1.5"/>
+    <text x="22" y="-9" font-size="20" font-family="SFMono-Regular, Menlo, monospace" fill="#9de7ff">OPENCLAW SKILL</text>
+
+    <text x="0" y="76" font-size="84" font-weight="700" font-family="'PingFang SC', 'Noto Sans SC', sans-serif" fill="#f5fbff">Offer Radar</text>
+    <text x="0" y="134" font-size="30" font-family="'PingFang SC', 'Noto Sans SC', sans-serif" fill="#b7ddff">把招聘邮件里的关键时间、入口和事件更新</text>
+    <text x="0" y="176" font-size="30" font-family="'PingFang SC', 'Noto Sans SC', sans-serif" fill="#b7ddff">稳定同步成中文 Apple Reminders</text>
+  </g>
+
+  <g transform="translate(96 500)">
+    <rect x="0" y="0" width="168" height="54" rx="16" fill="#0d2541" stroke="#56f0ff" stroke-width="1.5"/>
+    <text x="24" y="34" font-size="24" font-family="SFMono-Regular, Menlo, monospace" fill="#dcfbff">Gmail + Mail</text>
+    <rect x="186" y="0" width="176" height="54" rx="16" fill="#0d2541" stroke="#7effa8" stroke-width="1.5"/>
+    <text x="211" y="34" font-size="24" font-family="SFMono-Regular, Menlo, monospace" fill="#ecfff3">Apple Reminders</text>
+  </g>
+</svg>
