@@ -89,6 +89,11 @@ def ensure_list(list_name: str, account_name: str) -> None:
         raise SystemExit(proc.stderr.strip() or proc.stdout.strip() or "failed to ensure list")
 
 
+def not_found_error() -> int:
+    print("NOT_FOUND", file=sys.stderr)
+    return 2
+
+
 def create_reminder(
     list_name: str,
     account_name: str,
@@ -131,7 +136,87 @@ def create_reminder(
     return run_applescript(script)
 
 
-def add_reminder(args: argparse.Namespace) -> int:
+def update_reminder(
+    list_name: str,
+    account_name: str,
+    reminder_id: str,
+    title: str,
+    due: str | None,
+    notes: str,
+    priority: str,
+) -> subprocess.CompletedProcess[str]:
+    ensure_list(list_name, account_name)
+
+    escaped_list = escape(list_name)
+    escaped_id = escape(reminder_id)
+    escaped_title = escape(title)
+    priority_value = PRIORITY_MAP[priority]
+
+    script: list[str] = []
+    if due:
+        script.extend(due_lines(due))
+    script.append(f"set noteText to {applescript_text_expr(notes)}")
+    script.extend(
+        [
+            'tell application "Reminders"',
+            f'tell list "{escaped_list}"',
+            f'set hits to (every reminder whose id is "{escaped_id}")',
+            'if (count of hits) is 0 then error "NOT_FOUND"',
+            "set r to item 1 of hits",
+            f'set name of r to "{escaped_title}"',
+            "set body of r to noteText",
+            f"set priority of r to {priority_value}",
+        ]
+    )
+    if due:
+        script.extend(
+            [
+                "set due date of r to dueDate",
+                "set remind me date of r to dueDate",
+            ]
+        )
+    else:
+        script.extend(
+            [
+                "set due date of r to missing value",
+                "set remind me date of r to missing value",
+            ]
+        )
+    script.extend(
+        [
+            'return id of r & tab & name of container of r & tab & name of r',
+            "end tell",
+            "end tell",
+        ]
+    )
+    return run_applescript(script)
+
+
+def delete_reminder(
+    list_name: str,
+    account_name: str,
+    reminder_id: str,
+) -> subprocess.CompletedProcess[str]:
+    ensure_list(list_name, account_name)
+
+    escaped_list = escape(list_name)
+    escaped_id = escape(reminder_id)
+    script = [
+        'tell application "Reminders"',
+        f'tell list "{escaped_list}"',
+        f'set hits to (every reminder whose id is "{escaped_id}")',
+        'if (count of hits) is 0 then error "NOT_FOUND"',
+        "set r to item 1 of hits",
+        "set deletedId to id of r",
+        "delete r",
+        "return deletedId",
+        "end tell",
+        "end tell",
+    ]
+    return run_applescript(script)
+
+
+def add_reminder_cmd(args: argparse.Namespace) -> int:
     proc = create_reminder(
         list_name=args.list,
         account_name=args.account,
@@ -141,6 +226,38 @@ def add_reminder(args: argparse.Namespace) -> int:
         priority=args.priority,
     )
     output = (proc.stdout or proc.stderr).strip()
+    if output:
+        print(output)
+    return proc.returncode
+
+
+def update_reminder_cmd(args: argparse.Namespace) -> int:
+    proc = update_reminder(
+        list_name=args.list,
+        account_name=args.account,
+        reminder_id=args.id,
+        title=args.title,
+        due=args.due,
+        notes=args.notes,
+        priority=args.priority,
+    )
+    output = (proc.stdout or proc.stderr).strip()
+    if proc.returncode != 0 and "NOT_FOUND" in output:
+        return not_found_error()
+    if output:
+        print(output)
+    return proc.returncode
+
+
+def delete_reminder_cmd(args: argparse.Namespace) -> int:
+    proc = delete_reminder(
+        list_name=args.list,
+        account_name=args.account,
+        reminder_id=args.id,
+    )
+    output = (proc.stdout or proc.stderr).strip()
+    if proc.returncode != 0 and "NOT_FOUND" in output:
+        return not_found_error()
     if output:
         print(output)
     return proc.returncode
@@ -203,7 +320,9 @@ def sync_plan(args: argparse.Namespace) -> int:
             return clear_code
 
     processed = plan.get("processed", {})
-    for source_id, entry in processed.items():
+    for event_id, entry in processed.items():
+        if entry.get("status") not in (None, "active"):
+            continue
         note = entry.get("note", "")
         main = entry.get("mainReminder")
         if not main:
@@ -224,7 +343,7 @@ def sync_plan(args: argparse.Namespace) -> int:
             return proc.returncode
         output = (proc.stdout or proc.stderr).strip()
         if output:
-            print(f"{source_id}\tmain\t{output}")
+            print(f"{event_id}\tmain\t{output}")
 
     return 0
 
@@ -240,7 +359,23 @@ def build_parser() -> argparse.ArgumentParser:
     add.add_argument("--due")
     add.add_argument("--notes", default="")
     add.add_argument("--priority", choices=sorted(PRIORITY_MAP), default="none")
-    add.set_defaults(func=add_reminder)
+    add.set_defaults(func=add_reminder_cmd)
+
+    update = sub.add_parser("update")
+    update.add_argument("--id", required=True)
+    update.add_argument("--title", required=True)
+    update.add_argument("--list", default="OpenClaw")
+    update.add_argument("--account", default="iCloud")
+    update.add_argument("--due")
+    update.add_argument("--notes", default="")
+    update.add_argument("--priority", choices=sorted(PRIORITY_MAP), default="none")
+    update.set_defaults(func=update_reminder_cmd)
+
+    delete = sub.add_parser("delete")
+    delete.add_argument("--id", required=True)
+    delete.add_argument("--list", default="OpenClaw")
+    delete.add_argument("--account", default="iCloud")
+    delete.set_defaults(func=delete_reminder_cmd)
 
     clear = sub.add_parser("clear-list")
     clear.add_argument("--list", default="OpenClaw")
