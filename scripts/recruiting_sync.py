@@ -52,17 +52,70 @@ IGNORE_SUBJECT_KEYWORDS = (
     "问卷",
     "进度通知",
     "邀请反馈",
+    "职位推荐",
+    "岗位推荐",
+    "推荐职位",
+    "精选职位",
+    "职位订阅",
+    "岗位订阅",
+    "职位上新",
+    "岗位上新",
+    "职位动态",
+    "岗位动态",
 )
 
 IMPORTANT_SUBJECT_TOKENS = (
     "面试邀请",
+    "面试邀约",
     "面试信息有更新",
     "面试提醒",
+    "视频面试",
+    "现场面试",
+    "电话面试",
     "AI面试",
     "笔试",
+    "在线笔试",
+    "笔试通知",
+    "技术笔试",
+    "专业笔试",
     "测评",
+    "在线测评",
+    "在线测试",
+    "人才测评",
+    "能力测评",
+    "性格测评",
+    "考试通知",
+    "考试邀请",
+    "测试邀请",
     "授权",
+    "背调",
+    "背景调查",
     "assessment",
+)
+
+PLATFORM_SUBJECT_HINTS = (
+    "邀约",
+    "邀请函",
+    "约面",
+    "约你面试",
+    "面试",
+    "笔试",
+    "测试",
+    "测评",
+    "测验",
+    "考试",
+    "参加考试",
+    "参加测评",
+    "补充材料",
+    "补充资料",
+    "补充信息",
+    "信息收集",
+    "资料收集",
+    "背调",
+    "背景调查",
+    "授权",
+    "改期",
+    "重新安排",
 )
 
 UPDATE_KEYWORDS = (
@@ -87,8 +140,21 @@ KNOWN_SENDERS = (
     "people@mail.bytedance.net",
     "careers.bytedance.com",
     "mail.mokahr.com",
+    "mokahr.com",
     "nowcoder.net",
+    "beisen.com",
+    "italent.cn",
     "shmail.ibeisen.com",
+    "zhipin.com",
+    "bosszhipin.com",
+    "zhaopin.com",
+    "zhaopin.com.cn",
+    "liepin.com",
+    "lagou.com",
+    "shixiseng.com",
+    "51job.com",
+    "yingjiesheng.com",
+    "iguopin.com",
     "aixuexi.com",
 )
 
@@ -113,8 +179,19 @@ SOURCE_FAMILY_RULES = (
     ("@tencent.com", "tencent"),
     ("bytedance", "bytedance"),
     ("mokahr", "mokahr"),
-    ("nowcoder", "nowcoder"),
     ("ibeisen", "ibeisen"),
+    ("beisen", "beisen"),
+    ("italent", "beisen"),
+    ("nowcoder", "nowcoder"),
+    ("bosszhipin", "boss"),
+    ("zhipin.com", "boss"),
+    ("zhaopin", "zhaopin"),
+    ("liepin", "liepin"),
+    ("lagou", "lagou"),
+    ("shixiseng", "shixiseng"),
+    ("51job", "51job"),
+    ("yingjiesheng", "yingjiesheng"),
+    ("iguopin", "guopin"),
     ("aixuexi", "aixuexi"),
     ("meitu", "meitu"),
     ("trip.com", "trip"),
@@ -410,10 +487,18 @@ def is_candidate(mail: CandidateMail) -> bool:
     sender_lower = mail.sender.lower()
     if looks_like_receipt(subject):
         return False
+    lowered_subject = subject.lower()
+    direct_hit = any(token.lower() in lowered_subject for token in IMPORTANT_SUBJECT_TOKENS)
+    if direct_hit:
+        return True
     if any(domain in sender_lower for domain in KNOWN_SENDERS):
-        if any(token.lower() in subject.lower() for token in IMPORTANT_SUBJECT_TOKENS):
+        if any(token.lower() in lowered_subject for token in PLATFORM_SUBJECT_HINTS):
             return True
-    return any(token.lower() in subject.lower() for token in IMPORTANT_SUBJECT_TOKENS)
+        if any(token in subject for token in UPDATE_KEYWORDS) and any(
+            marker in subject for marker in ("面试", "笔试", "测评", "考试", "授权", "背调")
+        ):
+            return True
+    return False
 
 
 def simplify_company(name: str) -> str:
@@ -463,6 +548,15 @@ def detect_company(subject: str, sender: str, body: str, source_family: str) -> 
         "pdd": "拼多多",
         "aixuexi": "爱学习教育",
         "meitu": "美图",
+        "boss": "BOSS直聘",
+        "zhaopin": "智联招聘",
+        "liepin": "猎聘",
+        "lagou": "拉勾",
+        "shixiseng": "实习僧",
+        "51job": "前程无忧",
+        "yingjiesheng": "应届生求职网",
+        "guopin": "国聘",
+        "beisen": "北森",
     }
     return fallback_companies.get(source_family, "待确认公司")
 
@@ -470,7 +564,7 @@ def detect_company(subject: str, sender: str, body: str, source_family: str) -> 
 def detect_event_type(subject: str, body: str) -> str:
     merged = f"{subject}\n{body}"
     lowered = merged.lower()
-    if "授权" in merged:
+    if any(token in merged for token in ("授权", "背调", "背景调查", "个人信息收集", "资料收集")):
         return "authorization"
     if "ai面试" in lowered:
         return "ai_interview"
@@ -478,9 +572,11 @@ def detect_event_type(subject: str, body: str) -> str:
         return "interview"
     if any(token in merged for token in ("面试形式", "面试时间", "加入面试", "视频面试")):
         return "interview"
-    if "笔试" in merged:
+    if any(token in lowered for token in ("oa",)):
         return "written_exam"
-    if "测评" in merged or "assessment" in lowered:
+    if any(token in merged for token in ("笔试", "考试", "在线测试")):
+        return "written_exam"
+    if any(token in merged for token in ("测评", "测验")) or "assessment" in lowered:
         return "assessment"
     return "interview"
 
@@ -620,6 +716,63 @@ def parse_timing(mail: CandidateMail, event_type: str, body: str) -> dict[str, s
         deadline = parse_datetime(explicit_deadline.group(1).replace("T", " "))
         return {"type": "deadline", "deadline": format_due(deadline, with_seconds=True)}
 
+    chinese_full_range = re.search(
+        r"(\d{4})年(\d{1,2})月(\d{1,2})日(?:[^\n]{0,20})?(\d{1,2}:\d{2})(?::\d{2})?\s*[-~～至—]{1,2}\s*(\d{1,2}:\d{2})(?::\d{2})?",
+        body,
+    )
+    if chinese_full_range:
+        year = int(chinese_full_range.group(1))
+        month = int(chinese_full_range.group(2))
+        day = int(chinese_full_range.group(3))
+        start = parse_datetime(f"{year:04d}-{month:02d}-{day:02d} {chinese_full_range.group(4)}")
+        end = parse_datetime(f"{year:04d}-{month:02d}-{day:02d} {chinese_full_range.group(5)}")
+        return {"type": "scheduled_window", "start": format_due(start), "end": format_due(end)}
+
+    slash_range = re.search(
+        r"(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[^\n]{0,20})?(\d{1,2}:\d{2})(?::\d{2})?\s*[-~～至—]{1,2}\s*(\d{1,2}:\d{2})(?::\d{2})?",
+        body,
+    )
+    if slash_range:
+        year = int(slash_range.group(1))
+        month = int(slash_range.group(2))
+        day = int(slash_range.group(3))
+        start = parse_datetime(f"{year:04d}-{month:02d}-{day:02d} {slash_range.group(4)}")
+        end = parse_datetime(f"{year:04d}-{month:02d}-{day:02d} {slash_range.group(5)}")
+        return {"type": "scheduled_window", "start": format_due(start), "end": format_due(end)}
+
+    chinese_full_single = re.search(
+        r"(\d{4})年(\d{1,2})月(\d{1,2})日(?:[^\n]{0,20})?(\d{1,2}:\d{2})(?::\d{2})?",
+        body,
+    )
+    if chinese_full_single:
+        start = parse_datetime(
+            f"{int(chinese_full_single.group(1)):04d}-{int(chinese_full_single.group(2)):02d}-{int(chinese_full_single.group(3)):02d} {chinese_full_single.group(4)}"
+        )
+        return {"type": "scheduled_start", "start": format_due(start)}
+
+    month_day_range = re.search(
+        r"(\d{1,2})月(\d{1,2})日(?:[^\n]{0,20})?(\d{1,2}:\d{2})(?::\d{2})?\s*[-~～至—]{1,2}\s*(\d{1,2}:\d{2})(?::\d{2})?",
+        body,
+    )
+    if month_day_range:
+        year = mail.received_at.year
+        month = int(month_day_range.group(1))
+        day = int(month_day_range.group(2))
+        start = parse_datetime(f"{year:04d}-{month:02d}-{day:02d} {month_day_range.group(3)}")
+        end = parse_datetime(f"{year:04d}-{month:02d}-{day:02d} {month_day_range.group(4)}")
+        return {"type": "scheduled_window", "start": format_due(start), "end": format_due(end)}
+
+    month_day_single = re.search(
+        r"(\d{1,2})月(\d{1,2})日(?:[^\n]{0,20})?(\d{1,2}:\d{2})(?::\d{2})?",
+        body,
+    )
+    if month_day_single:
+        year = mail.received_at.year
+        month = int(month_day_single.group(1))
+        day = int(month_day_single.group(2))
+        start = parse_datetime(f"{year:04d}-{month:02d}-{day:02d} {month_day_single.group(3)}")
+        return {"type": "scheduled_start", "start": format_due(start)}
+
     before_deadline = re.search(
         r"(?:在|请于|请在)?\s*(\d{4}-\d{2}-\d{2})\s*(\d{1,2}:\d{2}:\d{2})(?:前|之前)",
         body,
@@ -635,6 +788,16 @@ def parse_timing(mail: CandidateMail, event_type: str, body: str) -> dict[str, s
     if chinese_deadline:
         deadline = parse_datetime(
             f"{chinese_deadline.group(1)}-{int(chinese_deadline.group(2)):02d}-{int(chinese_deadline.group(3)):02d} {chinese_deadline.group(4)}"
+        )
+        return {"type": "deadline", "deadline": format_due(deadline, with_seconds=True)}
+
+    month_day_deadline = re.search(
+        r"(?:于|在)?\s*(\d{1,2})月(\d{1,2})日(?:[^\n]{0,12})?(\d{1,2}:\d{2})(?:[:：]?\d{0,2})?\s*(?:前|之前|失效|截止)",
+        body,
+    )
+    if month_day_deadline:
+        deadline = parse_datetime(
+            f"{mail.received_at.year:04d}-{int(month_day_deadline.group(1)):02d}-{int(month_day_deadline.group(2)):02d} {month_day_deadline.group(3)}"
         )
         return {"type": "deadline", "deadline": format_due(deadline, with_seconds=True)}
 
@@ -777,6 +940,45 @@ def build_note(event_type: str, timing: dict[str, str], role: str, primary_link:
 def build_identity_key(company: str, event_type: str, role: str, source_family: str) -> str:
     role_key = clean_role(role).lower() or "generic"
     return f"{source_family}|{company}|{event_type}|{role_key}"
+
+
+def event_type_family(event_type: str) -> str:
+    if event_type in {"written_exam", "assessment"}:
+        return "exam"
+    return event_type
+
+
+def timing_specificity(timing: dict[str, str]) -> int:
+    timing_type = timing.get("type")
+    if timing_type == "scheduled_window":
+        return 3
+    if timing_type == "deadline":
+        return 2
+    if timing_type == "scheduled_start":
+        return 1
+    return 0
+
+
+def roles_compatible(candidate_role: str, existing_role: str) -> bool:
+    candidate_clean = clean_role(candidate_role)
+    existing_clean = clean_role(existing_role)
+    if not candidate_clean or not existing_clean:
+        return True
+    return candidate_clean.lower() == existing_clean.lower()
+
+
+def source_family_cluster(source_family: str) -> str:
+    if source_family in {"ibeisen", "beisen"}:
+        return "beisen"
+    return source_family
+
+
+def identity_is_compatible(candidate: EventObservation, entry: dict[str, Any]) -> bool:
+    if candidate.company != entry.get("company"):
+        return False
+    if event_type_family(candidate.event_type) != event_type_family(entry.get("eventType", "")):
+        return False
+    return roles_compatible(candidate.role, entry.get("role", ""))
 
 
 def build_observation_key(identity_key: str, timing: dict[str, str], subject: str) -> str:
@@ -969,10 +1171,18 @@ def entry_anchor(entry: dict[str, Any]) -> dt.datetime | None:
 
 
 def event_matches(candidate: EventObservation, entry: dict[str, Any]) -> int:
-    if candidate.identity_key != entry.get("identityKey"):
+    if not identity_is_compatible(candidate, entry):
         return -1
 
     score = 0
+    existing_source_family = entry.get("sourceFamily", "")
+    if candidate.source_family == existing_source_family:
+        score += 20
+    elif source_family_cluster(candidate.source_family) == source_family_cluster(existing_source_family):
+        score += 12
+    elif "generic" in {candidate.source_family, existing_source_family}:
+        score += 5
+
     candidate_threads = set(candidate.source_ids)
     previous_threads = set(entry.get("source", {}).get("threadIds", []))
     if candidate_threads & previous_threads:
@@ -1002,6 +1212,9 @@ def event_matches(candidate: EventObservation, entry: dict[str, Any]) -> int:
     previous_subject = normalize_subject_hint(entry.get("source", {}).get("subject", ""))
     candidate_subject = normalize_subject_hint(candidate.source_subjects[-1] if candidate.source_subjects else "")
     if previous_subject and candidate_subject and previous_subject == candidate_subject:
+        score += 15
+
+    if candidate.role and entry.get("role") and clean_role(candidate.role) == clean_role(entry.get("role", "")):
         score += 15
 
     if entry.get("status") in {"expired", "cancelled"}:
@@ -1048,8 +1261,37 @@ def build_source_payload(previous: dict[str, Any] | None, candidate: EventObserv
     }
 
 
+def choose_effective_timing(candidate: EventObservation, previous: dict[str, Any] | None) -> dict[str, str]:
+    if not previous:
+        return candidate.timing
+    previous_timing = previous.get("timing", {})
+    candidate_anchor = candidate.anchor_at()
+    previous_anchor = anchor_from_timing(previous_timing)
+    if not candidate_anchor or not previous_anchor:
+        return candidate.timing
+    delta_minutes = abs((candidate_anchor - previous_anchor).total_seconds()) / 60
+    if delta_minutes <= 5 and timing_specificity(previous_timing) > timing_specificity(candidate.timing):
+        return previous_timing
+    return candidate.timing
+
+
 def build_active_entry(event_id: str, candidate: EventObservation, previous: dict[str, Any] | None) -> dict[str, Any]:
     first_seen_at = previous.get("firstSeenAt") if previous else candidate.received_at.strftime("%Y-%m-%d %H:%M")
+    effective_timing = choose_effective_timing(candidate, previous)
+    subject = candidate.source_subjects[-1] if candidate.source_subjects else candidate.title
+    title = build_title(candidate.company, candidate.event_type, candidate.role, effective_timing, subject)
+    note = build_note(
+        candidate.event_type,
+        effective_timing,
+        candidate.role,
+        candidate.links[0]["url"] if candidate.links else "",
+        subject,
+    )
+    main_due = (
+        effective_timing["deadline"]
+        if effective_timing.get("type") == "deadline"
+        else effective_timing.get("start", candidate.main_due)
+    )
     entry = {
         "eventId": event_id,
         "status": "active",
@@ -1058,13 +1300,13 @@ def build_active_entry(event_id: str, candidate: EventObservation, previous: dic
         "company": candidate.company,
         "eventType": candidate.event_type,
         "role": candidate.role,
-        "title": candidate.title,
-        "note": candidate.note,
-        "timing": candidate.timing,
+        "title": title,
+        "note": note,
+        "timing": effective_timing,
         "links": candidate.links,
         "mainReminder": {
-            "title": candidate.title,
-            "due": candidate.main_due,
+            "title": title,
+            "due": main_due,
             "priority": candidate.priority,
         },
         "firstSeenAt": first_seen_at,
