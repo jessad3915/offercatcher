@@ -9,9 +9,7 @@
 [![Chinese First](https://img.shields.io/badge/中文优先-Gmail%20%2B%20iPhone-16a34a?style=flat-square)](./README.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-f59e0b?style=flat-square)](./LICENSE)
 
-`OpenClaw Offer Radar` 是一个给中文用户用的 OpenClaw skill。
-
-它不想替你“管理所有邮件”，它只盯一类真正容易误事的东西：面试、笔试、测评、授权、截止时间、更新通知。然后把这些信息整理成中文提醒，直接落进 iPhone 的原生提醒事项里。
+`OpenClaw Offer Radar` 是一个基于 OpenClaw、Gmail、Apple Mail 和 Apple Reminders 的招聘邮件提醒 skill，用来把面试、笔试、测评、授权、截止时间这类关键信息整理成中文提醒，并同步到 iPhone 的原生提醒事项里。
 
 ## 为什么会有这个仓库
 
