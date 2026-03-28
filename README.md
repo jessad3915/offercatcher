@@ -11,6 +11,23 @@
 
 `OpenClaw Offer Radar` 是一个基于 OpenClaw、Gmail、Apple Mail 和 Apple Reminders 的招聘邮件提醒 skill，用来把面试、笔试、测评、授权、截止时间这类关键信息整理成中文提醒，并同步到 iPhone 的原生提醒事项里。
 
+## 实际效果
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./assets/showcase-list.jpg" alt="提醒列表效果" width="260" />
+      <br />
+      <strong>提醒列表页</strong>
+    </td>
+    <td align="center" width="50%">
+      <img src="./assets/showcase-detail.jpg" alt="提醒详情效果" width="260" />
+      <br />
+      <strong>提醒详情页</strong>
+    </td>
+  </tr>
+</table>
+
 ## 适用环境
 
 这不是一个“跨平台邮件工具”，它当前就是为苹果生态用户准备的：
@@ -151,13 +168,6 @@ python3 ~/.openclaw/workspace/skills/openclaw-offer-radar/scripts/recruiting_syn
   --mail-account 谷歌 \
   --sync-reminders
 ```
-
-## 实际效果
-
-<p align="center">
-  <img src="./assets/showcase-list.jpg" alt="提醒列表效果" width="300" />
-  <img src="./assets/showcase-detail.jpg" alt="提醒详情效果" width="300" />
-</p>
 
 ## 当前可配项
 
