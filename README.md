@@ -154,13 +154,10 @@ python3 ~/.openclaw/workspace/skills/openclaw-offer-radar/scripts/recruiting_syn
 
 ## 实际效果
 
-提醒列表页：
-
-![提醒列表效果](./assets/showcase-list.jpg)
-
-提醒详情页：
-
-![提醒详情效果](./assets/showcase-detail.jpg)
+<p align="center">
+  <img src="./assets/showcase-list.jpg" alt="提醒列表效果" width="300" />
+  <img src="./assets/showcase-detail.jpg" alt="提醒详情效果" width="300" />
+</p>
 
 ## 当前可配项
 
