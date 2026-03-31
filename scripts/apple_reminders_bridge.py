@@ -13,21 +13,6 @@ PRIORITY_MAP = {
     "high": 1,
 }
 
-MONTH_MAP = {
-    1: "January",
-    2: "February",
-    3: "March",
-    4: "April",
-    5: "May",
-    6: "June",
-    7: "July",
-    8: "August",
-    9: "September",
-    10: "October",
-    11: "November",
-    12: "December",
-}
-
 
 def run_applescript(lines: list[str]) -> subprocess.CompletedProcess[str]:
     cmd = ["osascript"]
@@ -43,10 +28,37 @@ def run_applescript(lines: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def escape(text: str) -> str:
-    return text.replace("\\", "\\\\").replace('"', '\\"')
+    """
+    转义 AppleScript 字符串中的特殊字符。
+
+    AppleScript 特殊字符：
+    - \\ (反斜杠) - 转义字符
+    - " (双引号) - 字符串边界
+    - 换行符 - 需要转义为 \\n 或使用 linefeed 关键字
+    - 制表符 - 需要转义为 \\t 或使用 tab 关键字
+
+    注意：AppleScript 字符串中使用 & 作为连接运算符，
+    但在字符串内部不会被解析，所以不需要转义。
+    """
+    if not text:
+        return ""
+    return (
+        text
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+    )
 
 
 def applescript_text_expr(text: str) -> str:
+    """
+    构建 AppleScript 多行字符串表达式。
+
+    使用 splitlines() 分割文本，然后用 linefeed 连接各部分，
+    避免在字符串内部处理换行符。每个部分都经过完整的 escape() 转义。
+    """
     if not text:
         return '""'
     parts = text.splitlines()
@@ -63,14 +75,10 @@ def due_lines(raw_due: str) -> list[str]:
     else:
         raise SystemExit(f"unsupported due format: {raw_due}")
 
+    # 使用 date string 避免 AppleScript 的月份 bug（设置偶数月份会变成下一个奇数月份）
+    date_str = parsed.strftime("%Y-%m-%d %H:%M:%S")
     return [
-        "set dueDate to current date",
-        f"set year of dueDate to {parsed.year}",
-        f"set month of dueDate to {MONTH_MAP[parsed.month]}",
-        f"set day of dueDate to {parsed.day}",
-        f"set hours of dueDate to {parsed.hour}",
-        f"set minutes of dueDate to {parsed.minute}",
-        f"set seconds of dueDate to {parsed.second}",
+        f'set dueDate to date "{date_str}"',
     ]
 
 
@@ -294,11 +302,11 @@ def list_reminders(args: argparse.Namespace) -> int:
         "set rows to {}",
         "set theReminders to every reminder",
         "repeat with r in theReminders",
-        "set completedFlag to \"0\"",
+        'set completedFlag to "0"',
         "if completed of r then set completedFlag to \"1\"",
         "set end of rows to (id of r & tab & name of r & tab & completedFlag)",
         "end repeat",
-        'set AppleScript\'s text item delimiters to linefeed',
+        "set AppleScript's text item delimiters to linefeed",
         "return rows as text",
         "end tell",
         "end tell",

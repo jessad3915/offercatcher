@@ -1,107 +1,88 @@
 ---
-name: openclaw-offer-radar
-description: 把 Gmail 招聘邮件转成中文 Apple Reminders。用户提到“检查邮件里的面试/笔试/测评/授权”“把招聘邮件转成提醒事项”“别漏掉面试时间”“同步到 iPhone 提醒”等需求时触发。优先识别 ATS 邮件和面试信息更新，忽略投递成功回执。
+name: offercatcher
+description: Turn recruiting emails into native reminders. Use when user mentions "interview", "coding test", "assessment", "recruiting email", "sync to reminders", or "don't miss my interview". AI-powered parsing works for all languages and email formats.
 ---
 
-# OpenClaw Offer Radar
+# OfferCatcher
 
-## 适用场景
+## What It Does
 
-- 用户想把 Gmail 里的招聘邮件转成 Apple Reminders
-- 邮件里包含面试、笔试、测评、授权等需要行动的时间信息
-- 用户明确要求不要漏掉“面试信息更新”
-- 用户希望提醒同步到 iPhone / Mac / iPad
+Scans your Apple Mail for recruiting emails, extracts important events (interviews, assessments, deadlines) using LLM, and creates native Apple Reminders that sync to your iPhone.
 
-## 当前依赖
+## How To Use
 
-- `gog` 负责搜索 Gmail 候选邮件
-- Apple Mail 负责补抓邮件正文
-- Apple Reminders 负责把事件落到原生提醒事项
+### Trigger Phrases
 
-## 默认流程
+- "Check my recruiting emails"
+- "Any interviews coming up?"
+- "Sync interview emails to reminders"
+- "Don't let me miss my coding test"
 
-1. 运行扫描脚本：
+### Workflow
 
-```bash
-python3 scripts/recruiting_sync.py --account your@gmail.com --mail-account 谷歌
+```
+1. Scan: --scan-only → returns JSON with raw emails
+2. Parse: OpenClaw LLM extracts events from emails
+3. Apply: --apply-events → creates Apple Reminders
 ```
 
-2. 扫描脚本默认先看最近 2 天、最多 60 条候选线程。
-
-3. 默认忽略：
-   - 投递成功
-   - 收到申请
-   - 感谢投递
-   - 简历完善
-   - 反馈问卷
-   - 职位推荐
-   - 岗位推荐
-   - 订阅更新
-   - 精选职位
-
-4. 对以下邮件平台和招聘系统提高召回：
-   - `ibeisen`
-   - `beisen / italent`
-   - `mokahr`
-   - `nowcoder`
-   - `腾讯校招`
-   - `BOSS直聘`
-   - `智联招聘`
-   - `猎聘`
-   - `拉勾`
-   - `实习僧`
-   - `前程无忧 / 51Job`
-   - `应届生求职网`
-   - `国聘`
-
-5. 识别时优先关注这些主题词：
-   - `面试邀请 / 面试邀约 / 约面 / 视频面试 / 现场面试 / 电话面试`
-   - `面试信息有更新 / 改期 / 重新安排`
-   - `在线笔试 / 技术笔试 / 专业笔试 / 考试通知 / OA`
-   - `在线测评 / 人才测评 / 能力测评 / 性格测评`
-   - `授权 / 背调 / 背景调查 / 个人信息收集 / 补充材料`
-
-6. 识别时优先提取：
-   - 公司名
-   - 岗位
-   - 面试 / 笔试 / 测评时间
-   - 截止时间
-   - 主入口链接
-
-7. 同一事件的“邀请”和“更新”必须归并为一个提醒，优先保留最新时间；如果后续邮件是 `更新 / 变更 / 调整 / 改期`，应更新原提醒而不是新建。
-
-8. 一个事件只保留一条主提醒，不生成额外追提醒。
-
-9. 当前实现依赖 Apple Mail 补抓邮件正文，所以要求：
-   - Apple Mail 已登录同一个 Gmail 账号
-   - 运行环境已放行 Mail / Reminders 权限
-
-10. 如果用户要求真正同步到系统提醒事项，再执行：
+### Step 1: Scan Emails
 
 ```bash
-python3 scripts/recruiting_sync.py --account your@gmail.com --mail-account 谷歌 --sync-reminders
+python3 scripts/recruiting_sync.py --scan-only
 ```
 
-## 标题和备注规范
+Returns raw email data for LLM to parse.
 
-- 标题必须是中文
-- 标题只写事件本身，不写“11点提醒”之类调度信息
-- 备注只保留：
-  - 真实时间或截止时间
-  - 岗位
-  - 主入口链接
-  - 必要时的一句说明
-- 不写：
-  - Gmail ID
-  - 发件人元数据
-  - 长摘要
-  - 与事件无关的信息
+### Step 2: LLM Parses
 
-## 输出要求
+For each email, extract:
+- `company`: Company name
+- `event_type`: interview / ai_interview / written_exam / assessment / authorization / deadline
+- `timing`: `{"start": "YYYY-MM-DD HH:MM", "end": "..."}` or `{"deadline": "..."}`
+- `role`: Job title
+- `link`: Event URL
 
-- 先说明识别出多少个招聘事件
-- 若同步成功，回执：
-  - 事件标题
-  - due 时间
-  - 使用的列表
-- 若没有新事件，明确说明“本轮无新的高置信度招聘提醒”
+### Step 3: Apply Events
+
+```bash
+python3 scripts/recruiting_sync.py --apply-events /tmp/events.json
+```
+
+## LLM Parsing Prompt
+
+```
+Extract recruiting event information from this email. Return JSON.
+
+Email:
+{body}
+
+Extract:
+- company: Company name
+- event_type: interview / ai_interview / written_exam / assessment / authorization / deadline
+- timing: {"start": "YYYY-MM-DD HH:MM", "end": "..."} or {"deadline": "..."}
+- role: Job title
+- link: Event URL
+- notes: Additional info
+```
+
+## Output Rules
+
+- Reminder title: Company + Event type (e.g., "Google Interview", "Meta Coding Test")
+- Include: Time, role, link in notes
+- If no new events: respond `HEARTBEAT_OK`
+
+## Configuration
+
+`~/.openclaw/offercatcher.yaml`:
+
+```yaml
+mail_account: "Gmail"    # Apple Mail account name
+mailbox: INBOX           # Folder to scan
+days: 2                  # Scan last N days
+max_results: 60          # Max emails
+```
+
+## Supported Languages
+
+The LLM parser works with any language—Chinese, English, Japanese, German, etc. No regex, no language-specific rules.
