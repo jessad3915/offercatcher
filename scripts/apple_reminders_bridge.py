@@ -13,6 +13,21 @@ PRIORITY_MAP = {
     "high": 1,
 }
 
+MONTH_MAP = {
+    1: "January",
+    2: "February",
+    3: "March",
+    4: "April",
+    5: "May",
+    6: "June",
+    7: "July",
+    8: "August",
+    9: "September",
+    10: "October",
+    11: "November",
+    12: "December",
+}
+
 
 def run_applescript(lines: list[str]) -> subprocess.CompletedProcess[str]:
     cmd = ["osascript"]
@@ -75,10 +90,14 @@ def due_lines(raw_due: str) -> list[str]:
     else:
         raise SystemExit(f"unsupported due format: {raw_due}")
 
-    # 使用 date string 避免 AppleScript 的月份 bug（设置偶数月份会变成下一个奇数月份）
-    date_str = parsed.strftime("%Y-%m-%d %H:%M:%S")
     return [
-        f'set dueDate to date "{date_str}"',
+        "set dueDate to current date",
+        f"set year of dueDate to {parsed.year}",
+        f"set month of dueDate to {MONTH_MAP[parsed.month]}",
+        f"set day of dueDate to {parsed.day}",
+        f"set hours of dueDate to {parsed.hour}",
+        f"set minutes of dueDate to {parsed.minute}",
+        f"set seconds of dueDate to {parsed.second}",
     ]
 
 
