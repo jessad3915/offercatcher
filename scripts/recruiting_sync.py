@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -250,55 +251,99 @@ def run_text(cmd: list[str], timeout: int | None = None) -> str:
         raise RuntimeError(f"命令超时 ({timeout}s)") from exc
 
 
+def run_osascript(lines: list[str], timeout: int | None = None) -> str:
+    """通过 osascript -e 执行 AppleScript，显式 shell 引号避免编码异常。"""
+    command = "osascript " + " ".join(f"-e {shlex.quote(line)}" for line in lines)
+    return run_text(["/bin/zsh", "-lc", command], timeout=timeout)
+
+
 def applescript_escape(text: str) -> str:
     """转义 AppleScript 字符串中的特殊字符。"""
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
-def list_recent_mail_messages(days: int, max_results: int, mail_account: str, mailbox: str) -> list[MailMessage]:
-    """从 Apple Mail 获取最近 N 天的邮件列表。"""
-    escaped_account = applescript_escape(mail_account) if mail_account else ""
-    escaped_mailbox = applescript_escape(mailbox)
+def parse_apple_mail_datetime(value: str) -> dt.datetime | None:
+    """解析 Apple Mail 返回的中文日期字符串。"""
+    text = value.strip()
+    match = re.search(
+        r"(?P<year>\d{4})年(?P<month>\d{1,2})月(?P<day>\d{1,2})日.*?(?P<hour>\d{1,2}):(?P<minute>\d{2})(?::(?P<second>\d{2}))?",
+        text,
+    )
+    if not match:
+        return None
 
-    script = [
-        'on pad2(n)', 'set s to "00" & (n as string)', 'return text -2 thru -1 of s', 'end pad2',
-        'on month_number(m)',
-        'set month_names to {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}',
-        'repeat with idx from 1 to count of month_names', 'if item idx of month_names is (m as string) then return idx', 'end repeat', 'return 1',
-        'end month_number',
-        'set output to ""',
-        f'set cutoffDate to (current date) - {days} * days',
+    parts = {key: int(number) for key, number in match.groupdict(default="0").items()}
+    try:
+        return dt.datetime(
+            parts["year"], parts["month"], parts["day"], parts["hour"], parts["minute"], parts["second"]
+        )
+    except ValueError:
+        return None
+
+
+def list_mail_account_names() -> list[str]:
+    """列出 Apple Mail 中可用的账号名。"""
+    raw = run_osascript([
         'tell application "Mail"',
-    ]
+        'set accountNames to {}',
+        'repeat with acc in (every account)',
+        'set end of accountNames to (name of acc as string)',
+        'end repeat',
+        'return accountNames as string',
+        'end tell',
+    ], timeout=MAIL_TIMEOUT_SECONDS)
+    return [item.strip() for item in raw.split(",") if item.strip()]
 
-    if mail_account:
-        script.extend([
-            f'set targetAccountName to "{escaped_account}"', 'set targetAccounts to {}',
-            'repeat with acc in every account', 'if name of acc is targetAccountName then set end of targetAccounts to acc', 'end repeat',
-        ])
-    else:
-        script.append('set targetAccounts to every account')
 
-    script.extend([
-        'repeat with acc in targetAccounts', 'set accName to name of acc',
-        f'set inboxMailbox to mailbox "{escaped_mailbox}" of acc',
-        'set recentMessages to every message of inboxMailbox whose date received > cutoffDate',
-        'repeat with m in recentMessages',
-        'set msgId to (id of m) as string', 'set subj to subject of m as string', 'set sndr to sender of m as string',
-        'set d to date received of m', 'set yStr to (year of d as string)',
-        'set monthIndex to my month_number(month of d)', 'set mStr to my pad2(monthIndex)',
-        'set dayStr to my pad2(day of d)', 'set hStr to my pad2(hours of d)', 'set minStr to my pad2(minutes of d)',
-        'set ts to yStr & "-" & mStr & "-" & dayStr & " " & hStr & ":" & minStr',
-        f'set lineText to accName & tab & "{escaped_mailbox}" & tab & msgId & tab & subj & tab & sndr & tab & ts',
-        'set output to output & lineText & linefeed',
-        'end repeat', 'end repeat', 'end tell', 'return output',
-    ])
+def list_recent_mail_messages(days: int, max_results: int, mail_account: str, mailbox: str) -> list[MailMessage]:
+    """从 Apple Mail 获取最近 N 天的邮件列表。
 
-    cmd = ["osascript"]
-    for line in script:
-        cmd.extend(["-e", line])
+    优化：在 AppleScript 层面进行日期筛选，避免遍历全部邮件导致超时。
+    """
+    mailbox_candidates = [mailbox]
+    for candidate in ("Inbox", "收件箱"):
+        if candidate not in mailbox_candidates:
+            mailbox_candidates.append(candidate)
+    target_accounts = [mail_account] if mail_account else list_mail_account_names()
+    raw_chunks: list[str] = []
 
-    raw = run_text(cmd, timeout=MAIL_TIMEOUT_SECONDS + 10)
+    for account_name in target_accounts:
+        escaped_account = applescript_escape(account_name)
+        for mailbox_name in mailbox_candidates:
+            escaped_mailbox = applescript_escape(mailbox_name)
+            # 在 AppleScript 中进行日期筛选，大幅减少遍历量
+            script_lines = [
+                'tell application "Mail"',
+                f'set acc to account "{escaped_account}"',
+                f'set mbx to mailbox "{escaped_mailbox}" of acc',
+                'set output to ""',
+                'set cutoff to (current date) - (' + str(days) + ' * days)',
+                'set matchCount to 0',
+                'repeat with m in messages of mbx',
+                f'if matchCount is greater than or equal to {max_results * 3} then exit repeat',
+                'set msgDate to date received of m',
+                'if msgDate > cutoff then',
+                'set msgId to (id of m) as string',
+                'set subj to subject of m as string',
+                'set sndr to sender of m as string',
+                'set ts to (date received of m) as string',
+                f'set lineText to "{escaped_account}" & tab & "{escaped_mailbox}" & tab & msgId & tab & subj & tab & sndr & tab & ts',
+                'set output to output & lineText & linefeed',
+                'set matchCount to matchCount + 1',
+                'end if',
+                'end repeat',
+                'return output',
+                'end tell',
+            ]
+            try:
+                # 增加 timeout 到 60s，防止慢速邮箱超时
+                raw_chunks.append(run_osascript(script_lines, timeout=60))
+                break
+            except RuntimeError as exc:
+                logger.debug("读取邮箱失败 account=%s mailbox=%s err=%s", account_name, mailbox_name, exc)
+                continue
+
+    raw = "\n".join(chunk for chunk in raw_chunks if chunk.strip())
 
     messages: list[MailMessage] = []
     for line in raw.splitlines():
@@ -308,9 +353,8 @@ def list_recent_mail_messages(days: int, max_results: int, mail_account: str, ma
         if len(parts) != 6:
             continue
         account_name, mailbox_name, message_id, subject, sender, received_at = parts
-        try:
-            parsed = dt.datetime.strptime(received_at.strip(), "%Y-%m-%d %H:%M")
-        except ValueError:
+        parsed = parse_apple_mail_datetime(received_at)
+        if not parsed:
             continue
         messages.append(MailMessage(
             message_id=message_id.strip(), subject=subject.strip(), sender=sender.strip(),
@@ -350,12 +394,8 @@ def fetch_mail_bodies_batch(items: list[tuple[str, str, str]]) -> dict[str, str]
             'set results to results & msgId & tab & c & character id 0', 'end if', 'end repeat',
             'return results', 'end tell', 'end timeout',
         ]
-        cmd = ["osascript"]
-        for line in script:
-            cmd.extend(["-e", line])
-
         try:
-            raw = run_text(cmd, timeout=MAIL_TIMEOUT_SECONDS * 2 + 5)
+            raw = run_osascript(script, timeout=MAIL_TIMEOUT_SECONDS * 2 + 5)
         except RuntimeError:
             continue
 
