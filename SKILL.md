@@ -29,7 +29,9 @@ Scans Apple Mail for recruiting emails, extracts important events (interviews, a
 ### Workflow
 
 ```
-1. Scan: `--scan-only` → returns JSON with raw emails
+1. Scan:
+   - OpenClaw heartbeat path: direct top-level `osascript -e ...` command
+   - Manual/local CLI path: `python3 scripts/recruiting_sync.py --scan-only`
 2. Parse: OpenClaw LLM extracts structured recruiting events
 3. Apply: `--apply-events` → sends validated events to the native reminders bridge
 ```
@@ -37,10 +39,39 @@ Scans Apple Mail for recruiting emails, extracts important events (interviews, a
 ### Step 1: Scan Emails
 
 ```bash
+osascript \
+  -e 'tell application "Mail"' \
+  -e 'set acc to account "谷歌"' \
+  -e 'set mbx to mailbox "INBOX" of acc' \
+  -e 'set output to ""' \
+  -e 'set processedCount to 0' \
+  -e 'repeat with m in messages of mbx' \
+  -e 'if processedCount is greater than or equal to 300 then exit repeat' \
+  -e 'set msgDate to date received of m' \
+  -e 'if msgDate > ((current date) - (2 * days)) then' \
+  -e 'set msgId to (id of m) as string' \
+  -e 'set subj to subject of m as string' \
+  -e 'set sndr to sender of m as string' \
+  -e 'set ts to (date received of m) as string' \
+  -e 'set c to content of m as string' \
+  -e 'if (length of c) > 2000 then set c to text 1 thru 2000 of c' \
+  -e 'set lineText to "谷歌" & (character id 31) & "INBOX" & (character id 31) & msgId & (character id 31) & subj & (character id 31) & sndr & (character id 31) & ts & (character id 31) & c' \
+  -e 'set output to output & lineText & (character id 30)' \
+  -e 'set processedCount to processedCount + 1' \
+  -e 'end if' \
+  -e 'end repeat' \
+  -e 'return output' \
+  -e 'end tell'
+```
+
+or for local debugging:
+
+```bash
 python3 scripts/recruiting_sync.py --scan-only
 ```
 
-Returns raw email data for LLM to parse.
+The heartbeat path returns raw mail records separated by `character id 30` and
+`character id 31`. The local debugging path returns JSON.
 
 ### Step 2: LLM Parses
 
@@ -58,6 +89,10 @@ python3 scripts/recruiting_sync.py --apply-events /tmp/events.json
 ```
 
 This does not write Reminders directly from OpenClaw itself. It always routes through `scripts/apple_reminders_bridge.py`.
+
+For Mail reads, prefer the top-level `osascript -e ...` entry when OpenClaw is
+the caller. This keeps Mail automation attached to the host process instead of a
+Python child process.
 
 ## LLM Parsing Prompt
 

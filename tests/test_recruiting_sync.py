@@ -17,6 +17,16 @@ class RecruitingSyncTests(unittest.TestCase):
         self.assertEqual("OpenClaw", result["list"])
         self.assertEqual("测试标题", result["title"])
 
+    def test_run_osascript_uses_direct_argv(self) -> None:
+        with patch.object(recruiting_sync, "run_text", return_value="ok") as mock_run_text:
+            result = recruiting_sync.run_osascript(['tell application "Mail"', "return 1"], timeout=15)
+
+        self.assertEqual("ok", result)
+        mock_run_text.assert_called_once_with(
+            ["osascript", "-e", 'tell application "Mail"', "-e", "return 1"],
+            timeout=15,
+        )
+
     def test_scan_emails_returns_json(self) -> None:
         """验证扫描模式返回正确格式的 JSON。"""
         args = type('Args', (), {

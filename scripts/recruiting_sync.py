@@ -13,7 +13,6 @@ import json
 import logging
 import os
 import re
-import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -252,9 +251,11 @@ def run_text(cmd: list[str], timeout: int | None = None) -> str:
 
 
 def run_osascript(lines: list[str], timeout: int | None = None) -> str:
-    """通过 osascript -e 执行 AppleScript，显式 shell 引号避免编码异常。"""
-    command = "osascript " + " ".join(f"-e {shlex.quote(line)}" for line in lines)
-    return run_text(["/bin/zsh", "-lc", command], timeout=timeout)
+    """通过 osascript -e 直接执行 AppleScript，避免 shell 二次解析破坏引号。"""
+    cmd = ["osascript"]
+    for line in lines:
+        cmd.extend(["-e", line])
+    return run_text(cmd, timeout=timeout)
 
 
 def applescript_escape(text: str) -> str:
